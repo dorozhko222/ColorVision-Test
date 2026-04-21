@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест на дальтонизм - Офтальмологическая клиника</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 30px;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .result-box {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .diagnosis-text {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .warning {
+            color: #e74c3c;
+        }
+
+        .normal {
+            color: #27ae60;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background: #219a52;
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d5f5e3;
+            color: #27ae60;
+            display: block;
+        }
+
+        .message.error {
+            background: #fadbd8;
+            color: #e74c3c;
+            display: block;
+        }
+
+        .admin-link {
+            margin-top: 30px;
+            display: inline-block;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        hr {
+            margin: 20px 0;
+            border: none;
+            height: 1px;
+            background: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👁️ Проверь своё зрение</h1>
+        <p class="subtitle">Бесплатный тест на дальтонизм + консультация офтальмолога</p>
+
+        <button class="test-btn" id="startTestBtn">🎨 Пройти тест с картинками</button>
+
+        <div id="resultBox" class="result-box">
+            <p class="diagnosis-text" id="diagnosisText"></p>
+            <p style="font-size: 14px; color: #7f8c8d;">Результат теста автоматически подставится ниже</p>
+        </div>
+
+        <hr>
+
+        <h2>📅 Запись на бесплатную консультацию</h2>
+        <p style="margin-bottom: 20px;">Оставьте контакты, и мы запишем вас к офтальмологу</p>
+
+        <div class="form-group">
+            <label>Ваше имя</label>
+            <input type="text" id="userName" placeholder="Иван Иванов">
+        </div>
+
+        <div class="form-group">
+            <label>Номер телефона</label>
+            <input type="tel" id="userPhone" placeholder="+7 (999) 123-45-67">
+        </div>
+
+        <button class="submit-btn" id="submitBtn">📞 Записаться на приём</button>
+
+        <div id="messageBox" class="message"></div>
+
+        <a href="/admin" class="admin-link">📊 Админ-панель (просмотр заявок)</a>
+    </div>
+
+    <script>
+        let currentDiagnosis = "";
+
+        // Элементы DOM
+        const startTestBtn = document.getElementById('startTestBtn');
+        const resultBox = document.getElementById('resultBox');
+        const diagnosisText = document.getElementById('diagnosisText');
+        const userName = document.getElementById('userName');
+        const userPhone = document.getElementById('userPhone');
+        const submitBtn = document.getElementById('submitBtn');
+        const messageBox = document.getElementById('messageBox');
+
+        // Функция для получения результата теста
+        async function fetchResult() {
+            try {
+                const response = await fetch('/get_result');
+                const data = await response.json();
+
+                if (data.status === 'success' && data.result) {
+                    currentDiagnosis = data.result;
+                    diagnosisText.innerHTML = currentDiagnosis;
+
+                    // Добавляем класс для цвета
+                    if (currentDiagnosis.includes('ВНИМАНИЕ')) {
+                        diagnosisText.className = 'diagnosis-text warning';
+                    } else {
+                        diagnosisText.className = 'diagnosis-text normal';
+                    }
+
+                    resultBox.classList.add('show');
+                } else {
+                    // Если результата нет, пробуем ещё раз через секунду
+                    setTimeout(fetchResult, 1000);
+                }
+            } catch (error) {
+                console.error('Ошибка получения результата:', error);
+                setTimeout(fetchResult, 1000);
+            }
+        }
+
+        // Запуск теста
+        startTestBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/run_test');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    resultBox.classList.remove('show');
+                    currentDiagnosis = "";
+                    diagnosisText.innerHTML = "⏳ Тест запущен. Пройдите его в открывшемся окне...";
+                    resultBox.classList.add('show');
+
+                    // Начинаем проверять результат каждую секунду
+                    setTimeout(fetchResult, 2000);
+                } else {
+                    alert('Ошибка запуска теста: ' + data.message);
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error);
+            }
+        });
+
+        // Отправка заявки
+        submitBtn.addEventListener('click', async () => {
+            const name = userName.value.trim();
+            const phone = userPhone.value.trim();
+
+            if (!name || !phone) {
+                messageBox.textContent = 'Заполните имя и телефон!';
+                messageBox.className = 'message error';
+                setTimeout(() => {
+                    messageBox.className = 'message';
+                }, 3000);
+                return;
+            }
+
+            try {
+                const response = await fetch('/appointment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        phone: phone,
+                        diagnosis: currentDiagnosis || "Не пройден тест"
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    messageBox.textContent = data.message;
+                    messageBox.className = 'message success';
+                    userName.value = '';
+                    userPhone.value = '';
+
+                    setTimeout(() => {
+                        messageBox.className = 'message';
+                    }, 3000);
+                } else {
+                    messageBox.textContent = 'Ошибка отправки';
+                    messageBox.className = 'message error';
+                }
+            } catch (error) {
+                messageBox.textContent = 'Ошибка: ' + error;
+                messageBox.className = 'message error';
+            }
+        });
+    </script>
+</body>
+</html>
